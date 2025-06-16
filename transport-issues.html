@@ -1,0 +1,95 @@
+<div class="page-header">
+    <h1 class="page-title">Transport Issues</h1>
+    <p class="page-subtitle">View RAMCO data and create transport issue tickets</p>
+</div>
+
+<input type="text" class="search-box" id="transportSearch" placeholder="Search RAMCO data..." oninput="searchTransportData()">
+
+<div class="table-container">
+    <div id="transportLoading" class="loading">
+        <div class="spinner"></div> Loading RAMCO data...
+    </div>
+    <div id="transportTableContainer" style="display: none; overflow-x: auto;">
+        <table id="transportTable">
+            <thead id="transportTableHead"></thead>
+            <tbody id="transportTableBody"></tbody>
+        </table>
+    </div>
+    <div id="transportEmpty" class="empty-state" style="display: none;">
+        <div class="icon">📋</div>
+        <h3>No Data Available</h3>
+        <p>Upload some CSV data first to see transport information here.</p>
+    </div>
+</div>
+
+<div class="pagination" id="transportPagination"></div>
+
+<!-- Transport Issue Modal -->
+<div id="transportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Create Transport Issue Ticket</h2>
+            <span class="close" onclick="closeModal('transportModal')">&times;</span>
+        </div>
+        <form id="transportForm">
+            <div class="form-group">
+                <label class="form-label">Haulers Name</label>
+                <input type="text" class="form-control" id="haulersName">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Driver</label>
+                <input type="text" class="form-control" id="driver">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Plate Number</label>
+                <input type="text" class="form-control" id="plateNumber">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Sold to Name</label>
+                <input type="text" class="form-control" id="soldToName">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Ship to Name</label>
+                <input type="text" class="form-control" id="shipToName">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Ship to Address</label>
+                <input type="text" class="form-control" id="shipToAddress">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Dispatch Date</label>
+                <input type="date" class="form-control" id="dispatchDate">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Dispatch Time</label>
+                <input type="time" class="form-control" id="dispatchTime">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Delivery Schedule</label>
+                <input type="text" class="form-control" id="deliverySchedule" placeholder="Enter delivery schedule">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Transport Caller</label>
+                <input type="text" class="form-control" id="transportCaller" placeholder="Enter transport caller name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select class="form-control" id="status">
+                    <option value="">Select Status</option>
+                    <option value="OFF SITE LOADED">OFF SITE LOADED</option>
+                    <option value="ON SITE LOADED">ON SITE LOADED</option>
+                    <option value="IN TRANSIT TO CUSTOMER">IN TRANSIT TO CUSTOMER</option>
+                    <option value="ON SITE UNLOADING">ON SITE UNLOADING</option>
+                    <option value="ON SIDE UNLOADED">ON SIDE UNLOADED</option>
+                    <option value="IN LINE AT PLANT">IN LINE AT PLANT</option>
+                    <option value="INTRANSIT TO PLANT">INTRANSIT TO PLANT</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Remarks</label>
+                <textarea class="form-control" id="remarks" rows="4" placeholder="Enter any additional remarks"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">Submit Ticket</button>
+        </form>
+    </div>
+</div>

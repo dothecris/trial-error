@@ -1,0 +1,36 @@
+<div class="page-header">
+    <h1 class="page-title">View Tickets</h1>
+    <p class="page-subtitle">Search and view submitted transport issue tickets</p>
+</div>
+
+<input type="text" class="search-box" id="ticketsSearch" placeholder="Search tickets..." oninput="searchTickets()">
+
+<div class="table-container">
+    <div id="ticketsLoading" class="loading">
+        <div class="spinner"></div> Loading tickets...
+    </div>
+    <div id="ticketsTableContainer" style="display: none; overflow-x: auto;">
+        <table id="ticketsTable">
+            <thead id="ticketsTableHead"></thead>
+            <tbody id="ticketsTableBody"></tbody>
+        </table>
+    </div>
+    <div id="ticketsEmpty" class="empty-state" style="display: none;">
+        <div class="icon">🎟</div>
+        <h3>No Tickets Found</h3>
+        <p>No transport issue tickets have been submitted yet.</p>
+    </div>
+</div>
+
+<div class="pagination" id="ticketsPagination"></div>
+
+<!-- Ticket View Modal -->
+<div id="ticketModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Ticket Details</h2>
+            <span class="close" onclick="closeModal('ticketModal')">&times;</span>
+        </div>
+        <div id="ticketDetails"></div>
+    </div>
+</div>

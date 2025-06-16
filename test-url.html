@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test RAMCO Web App URL</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .btn-primary {
+            background: #2196F3;
+        }
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧪 RAMCO Web App URL Tester</h1>
+        <p>This page will test your Google Apps Script web app URL to ensure it's working correctly.</p>
+        
+        <div class="status info">
+            <strong>📍 Your Web App URL:</strong><br>
+            <code>https://script.google.com/macros/s/AKfycbyvWIaUOc3_dzkglqpRaryA0ClbYiWBxPudg9iTosqL4pPFwfapWkBnsH5gl7j6yhig/exec</code>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button class="btn btn-primary" onclick="testDirectAccess()">🌐 Test Direct Access</button>
+            <button class="btn" onclick="testWithFetch()">📡 Test with Fetch API</button>
+            <button class="btn" onclick="openInNewTab()">🔗 Open in New Tab</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <div class="card">
+        <h2>📋 Test Results</h2>
+        <div id="testResults">
+            <p>Click the test buttons above to check your web app.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>🔧 Troubleshooting Steps</h2>
+        <ol>
+            <li><strong>Check Deployment Settings:</strong>
+                <ul>
+                    <li>Go to Google Apps Script Editor</li>
+                    <li>Click "Deploy" → "Manage deployments"</li>
+                    <li>Ensure "Execute as: Me" is selected</li>
+                    <li>Ensure "Who has access: Anyone" is selected</li>
+                </ul>
+            </li>
+            <li><strong>Check Permissions:</strong>
+                <ul>
+                    <li>Make sure you've authorized the script to access Google Sheets</li>
+                    <li>Try running a function manually in the Apps Script editor first</li>
+                </ul>
+            </li>
+            <li><strong>Try Redeployment:</strong>
+                <ul>
+                    <li>Create a new deployment version</li>
+                    <li>Use the new URL provided</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <script>
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbyvWIaUOc3_dzkglqpRaryA0ClbYiWBxPudg9iTosqL4pPFwfapWkBnsH5gl7j6yhig/exec';
+        
+        function updateResults(content) {
+            document.getElementById('testResults').innerHTML = content;
+        }
+        
+        function testDirectAccess() {
+            updateResults('<div class="status info">🔄 Testing direct access...</div>');
+            
+            // Test if we can access the URL directly
+            window.location.href = webAppUrl;
+        }
+        
+        function testWithFetch() {
+            updateResults('<div class="status info">🔄 Testing with Fetch API...</div>');
+            
+            fetch(webAppUrl)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                })
+                .then(html => {
+                    console.log('Response HTML length:', html.length);
+                    
+                    let resultHtml = '<div class="status success">✅ Fetch test successful!</div>';
+                    resultHtml += `<p><strong>Response Status:</strong> 200 OK</p>`;
+                    resultHtml += `<p><strong>Content Length:</strong> ${html.length} characters</p>`;
+                    
+                    // Check if it looks like our app
+                    if (html.includes('RAMCO Transport')) {
+                        resultHtml += '<div class="status success">✅ RAMCO Transport app detected in response!</div>';
+                    } else {
+                        resultHtml += '<div class="status error">❌ Response doesn\'t appear to be the RAMCO app</div>';
+                    }
+                    
+                    resultHtml += '<details><summary>📄 Response Preview (first 500 chars)</summary><pre>' + 
+                                 html.substring(0, 500) + (html.length > 500 ? '...' : '') + '</pre></details>';
+                    
+                    updateResults(resultHtml);
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    
+                    let resultHtml = '<div class="status error">❌ Fetch test failed!</div>';
+                    resultHtml += `<p><strong>Error:</strong> ${error.message}</p>`;
+                    resultHtml += '<div class="status info">💡 This might be due to CORS restrictions. Try the direct access test instead.</div>';
+                    
+                    updateResults(resultHtml);
+                });
+        }
+        
+        function openInNewTab() {
+            updateResults('<div class="status info">🔄 Opening web app in new tab...</div>');
+            window.open(webAppUrl, '_blank');
+        }
+        
+        // Auto-test on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Testing web app URL:', webAppUrl);
+            
+            // Show current page info
+            let info = '<div class="status info">';
+            info += '<strong>🌐 Current Page URL:</strong><br>';
+            info += '<code>' + window.location.href + '</code><br><br>';
+            info += '<strong>📍 Target Web App URL:</strong><br>';
+            info += '<code>' + webAppUrl + '</code>';
+            info += '</div>';
+            
+            updateResults(info);
+        });
+    </script>
+</body>
+</html>

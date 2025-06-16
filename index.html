@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAMCO Transport Management</title>
+    <?!= include('styles'); ?>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>RAMCO Transport</h1>
+            <div class="nav-item active" onclick="showPage('dashboard')">
+                📊 Dashboard
+            </div>
+            <div class="nav-item" onclick="showPage('upload')">
+                📤 Upload Trips
+            </div>
+            <div class="nav-item" onclick="showPage('transport')">
+                🚚 Transport Issues
+            </div>
+            <div class="nav-item" onclick="showPage('tickets')">
+                🎟 View Tickets
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active">
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Welcome to RAMCO Transport Management System</p>
+                </div>
+                
+                <div class="card">
+                    <h3>Quick Actions</h3>
+                    <p>Use the sidebar to navigate to different sections:</p>
+                    <ul style="margin-top: 15px; padding-left: 20px;">
+                        <li><strong>Upload Trips:</strong> Import CSV files with trip data</li>
+                        <li><strong>Transport Issues:</strong> View RAMCO data and create transport issue tickets</li>
+                        <li><strong>View Tickets:</strong> View and search submitted tickets</li>
+                    </ul>
+                </div>
+
+                <div class="debug-section">
+                    <h4>🔧 System Diagnostics</h4>
+                    <p>Use these tools to test and diagnose system functionality:</p>
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-primary" onclick="testConnection()">🔍 Run Full Diagnostics</button>
+                        <button class="btn btn-success" onclick="addTestRow()">➕ Add Test Row</button>
+                        <button class="btn btn-warning" onclick="testBasicFunction()">⚡ Test Basic Function</button>
+                        <button class="btn btn-info" onclick="testDeploymentUrl()">🌐 Test URL</button>
+                    </div>
+                    <div id="debugResults" class="debug-result" style="display: none;"></div>
+                </div>
+
+                <div class="card">
+                    <h3>📋 System Status</h3>
+                    <div style="margin-top: 15px;">
+                        <div style="padding: 10px; background: #e3f2fd; border-left: 4px solid #2196f3; margin-bottom: 10px;">
+                            <strong>🔗 Google Apps Script Integration:</strong> <span id="gasStatus">Checking...</span>
+                        </div>
+                        <div style="padding: 10px; background: #f3e5f5; border-left: 4px solid #9c27b0; margin-bottom: 10px;">
+                            <strong>📊 Spreadsheet ID:</strong> 1ykwqHI0wwLh6WZDQRmAX3a4SQM9x7Md7TUV6U3x5oXY
+                        </div>
+                        <div style="padding: 10px; background: #e8f5e8; border-left: 4px solid #4caf50; margin-bottom: 10px;">
+                            <strong>🚀 System Version:</strong> 2.1 (Enhanced Connection Testing)
+                        </div>
+                        <div style="padding: 10px; background: #fff3e0; border-left: 4px solid #ff9800;">
+                            <strong>🌐 Current URL:</strong> <span id="currentUrl">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🆘 Troubleshooting Guide</h3>
+                    <div style="margin-top: 15px;">
+                        <h4>If you see "No response from server":</h4>
+                        <ol style="margin-top: 10px; padding-left: 20px;">
+                            <li><strong>Check Deployment:</strong> Ensure you deployed as "Web app" with "Execute as: Me" and "Who has access: Anyone"</li>
+                            <li><strong>Check Permissions:</strong> Make sure you authorized the script to access Google Sheets</li>
+                            <li><strong>Check URL:</strong> Verify you're using the correct web app URL from the deployment</li>
+                            <li><strong>Try Redeployment:</strong> Create a new deployment version in Google Apps Script</li>
+                            <li><strong>Clear Cache:</strong> Try opening the web app in an incognito/private window</li>
+                        </ol>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-primary" onclick="testConnection()">🔍 Run Diagnostics</button>
+                            <button class="btn btn-info" onclick="testDeploymentUrl()">🌐 Test Current URL</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Page Container -->
+            <div id="upload" class="page"></div>
+
+            <!-- Transport Issues Page Container -->
+            <div id="transport" class="page"></div>
+
+            <!-- View Tickets Page Container -->
+            <div id="tickets" class="page"></div>
+        </div>
+    </div>
+
+    <?!= include('scripts'); ?>
+    
+    <script>
+        // Initialize system status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update current URL
+            const currentUrlEl = document.getElementById('currentUrl');
+            if (currentUrlEl) {
+                currentUrlEl.textContent = window.location.href;
+            }
+            
+            // Check Google Apps Script status
+            const gasStatusEl = document.getElementById('gasStatus');
+            if (gasStatusEl) {
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    gasStatusEl.textContent = 'Active ✅';
+                    gasStatusEl.style.color = '#28a745';
+                } else {
+                    gasStatusEl.textContent = 'Not Available ❌';
+                    gasStatusEl.style.color = '#dc3545';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

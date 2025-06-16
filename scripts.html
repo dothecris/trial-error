@@ -1,0 +1,767 @@
+<script>
+    // Global variables
+    let currentTransportData = { headers: [], data: [] };
+    let currentTicketsData = { headers: [], data: [] };
+    let currentTransportPage = 1;
+    let currentTicketsPage = 1;
+    const itemsPerPage = 10;
+
+    // Page loading system
+    const pageTemplates = {
+        upload: 'upload',
+        transport: 'transport-issues',
+        tickets: 'view-tickets'
+    };
+
+    // Navigation
+    function showPage(pageId) {
+        // Hide all pages
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+        
+        // Update sidebar
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // Show selected page
+        const pageElement = document.getElementById(pageId);
+        
+        if (pageId === 'dashboard') {
+            pageElement.classList.add('active');
+            return;
+        }
+
+        // Load page content if not dashboard
+        if (pageTemplates[pageId]) {
+            loadPageContent(pageId, pageTemplates[pageId]);
+        }
+    }
+
+    function loadPageContent(pageId, templateName) {
+        const pageElement = document.getElementById(pageId);
+        
+        // Show loading state
+        pageElement.innerHTML = '<div class="loading"><div class="spinner"></div> Loading page...</div>';
+        pageElement.classList.add('active');
+        
+        // Fetch page content
+        google.script.run
+            .withSuccessHandler((content) => {
+                pageElement.innerHTML = content;
+                pageElement.classList.add('active');
+                
+                // Initialize page-specific functionality
+                if (pageId === 'upload') {
+                    initializeUploadPage();
+                } else if (pageId === 'transport') {
+                    initializeTransportPage();
+                } else if (pageId === 'tickets') {
+                    initializeTicketsPage();
+                }
+            })
+            .withFailureHandler((error) => {
+                pageElement.innerHTML = `<div class="alert alert-error">Error loading page: ${error}</div>`;
+                console.error('Error loading page:', error);
+            })
+            .include(templateName);
+    }
+
+    // Page initialization functions
+    function initializeUploadPage() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('csvFile');
+
+        if (!uploadArea || !fileInput) return;
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+    }
+
+    function initializeTransportPage() {
+        console.log('Initializing Transport Page...');
+        loadTransportData();
+        
+        // Initialize form submission
+        const transportForm = document.getElementById('transportForm');
+        if (transportForm) {
+            transportForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    haulersName: document.getElementById('haulersName').value,
+                    driver: document.getElementById('driver').value,
+                    plateNumber: document.getElementById('plateNumber').value,
+                    soldToName: document.getElementById('soldToName').value,
+                    shipToName: document.getElementById('shipToName').value,
+                    shipToAddress: document.getElementById('shipToAddress').value,
+                    dispatchDate: document.getElementById('dispatchDate').value,
+                    dispatchTime: document.getElementById('dispatchTime').value,
+                    deliverySchedule: document.getElementById('deliverySchedule').value,
+                    transportCaller: document.getElementById('transportCaller').value,
+                    status: document.getElementById('status').value,
+                    remarks: document.getElementById('remarks').value
+                };
+                
+                showNotification('Submitting ticket...', 'info');
+                
+                google.script.run
+                    .withSuccessHandler(handleTicketSubmitSuccess)
+                    .withFailureHandler(handleTicketSubmitError)
+                    .submitTransportIssue(formData);
+            });
+        }
+    }
+
+    function initializeTicketsPage() {
+        loadTicketsData();
+    }
+
+    // Debug Functions - UPDATED WITH CORRECT FUNCTION NAMES
+    function testConnection() {
+        showNotification('Running full diagnostics...', 'info');
+        google.script.run
+            .withSuccessHandler(handleDebugResult)
+            .withFailureHandler(handleDebugError)
+            .runDiagnostics();
+    }
+
+    function addTestRow() {
+        showNotification('Adding test row...', 'info');
+        google.script.run
+            .withSuccessHandler(handleDebugResult)
+            .withFailureHandler(handleDebugError)
+            .addTestRow();
+    }
+
+    function testBasicFunction() {
+        showNotification('Testing basic function...', 'info');
+        google.script.run
+            .withSuccessHandler(handleDebugResult)
+            .withFailureHandler(handleDebugError)
+            .testBasic();
+    }
+
+    function testDeploymentUrl() {
+        showNotification('Testing deployment URL...', 'info');
+        // Open the test URL page
+        window.open('https://script.google.com/macros/s/AKfycbyvWIaUOc3_dzkglqpRaryA0ClbYiWBxPudg9iTosqL4pPFwfapWkBnsH5gl7j6yhig/exec?page=test-url', '_blank');
+    }
+
+    function handleDebugResult(result) {
+        const debugResults = document.getElementById('debugResults');
+        if (debugResults) {
+            debugResults.style.display = 'block';
+            debugResults.innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+        }
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+        } else {
+            showNotification(result.message, 'error');
+        }
+    }
+
+    function handleDebugError(error) {
+        const debugResults = document.getElementById('debugResults');
+        if (debugResults) {
+            debugResults.style.display = 'block';
+            debugResults.innerHTML = '<pre>Error: ' + error.toString() + '</pre>';
+        }
+        showNotification('Debug test failed: ' + error.toString(), 'error');
+    }
+
+    // File Upload Functions
+    function handleFileUpload(file) {
+        console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+        
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            showNotification('Please select a CSV file.', 'error');
+            return;
+        }
+
+        // Show upload progress
+        const uploadArea = document.getElementById('uploadArea');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        if (!uploadArea || !uploadProgress || !progressFill || !progressText) return;
+
+        uploadArea.classList.add('uploading');
+        uploadProgress.style.display = 'block';
+        
+        // Simulate progress steps
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 10;
+            progressFill.style.width = progress + '%';
+            
+            if (progress <= 30) {
+                progressText.textContent = 'Reading file...';
+            } else if (progress <= 60) {
+                progressText.textContent = 'Processing data...';
+            } else if (progress <= 90) {
+                progressText.textContent = 'Uploading to spreadsheet...';
+            }
+            
+            if (progress >= 90) {
+                clearInterval(progressInterval);
+            }
+        }, 200);
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const csvData = e.target.result;
+            console.log('File read successfully, length:', csvData.length);
+            console.log('First 200 characters:', csvData.substring(0, 200));
+            
+            // Validate CSV data before sending
+            if (!csvData || csvData.trim().length === 0) {
+                clearInterval(progressInterval);
+                uploadArea.classList.remove('uploading');
+                uploadProgress.style.display = 'none';
+                showNotification('CSV file is empty', 'error');
+                return;
+            }
+            
+            google.script.run
+                .withSuccessHandler((result) => {
+                    clearInterval(progressInterval);
+                    progressFill.style.width = '100%';
+                    progressText.textContent = 'Upload completed!';
+                    
+                    setTimeout(() => {
+                        uploadArea.classList.remove('uploading');
+                        uploadProgress.style.display = 'none';
+                        progressFill.style.width = '0%';
+                    }, 2000);
+                    
+                    handleUploadSuccess(result);
+                })
+                .withFailureHandler((error) => {
+                    clearInterval(progressInterval);
+                    uploadArea.classList.remove('uploading');
+                    uploadProgress.style.display = 'none';
+                    progressFill.style.width = '0%';
+                    handleUploadError(error);
+                })
+                .processCsvUpload(csvData);
+        };
+        
+        reader.onerror = function(error) {
+            clearInterval(progressInterval);
+            uploadArea.classList.remove('uploading');
+            uploadProgress.style.display = 'none';
+            showNotification('Error reading file: ' + error.toString(), 'error');
+        };
+        
+        reader.readAsText(file);
+    }
+
+    function handleUploadSuccess(result) {
+        console.log('Upload result:', result);
+        if (result.success) {
+            showNotification('✅ ' + result.message, 'success');
+            showAlert('success', result.message, 'uploadResult');
+        } else {
+            showNotification('❌ ' + result.message, 'error');
+            showAlert('error', result.message, 'uploadResult');
+        }
+    }
+
+    function handleUploadError(error) {
+        console.error('Upload error:', error);
+        const message = 'Error uploading file: ' + error.toString();
+        showNotification('❌ ' + message, 'error');
+        showAlert('error', message, 'uploadResult');
+    }
+
+    // Transport Data Functions - FIXED TO USE CORRECT FUNCTION NAME
+    function loadTransportData() {
+        console.log('Loading transport data...');
+        const loadingEl = document.getElementById('transportLoading');
+        const tableEl = document.getElementById('transportTableContainer');
+        const emptyEl = document.getElementById('transportEmpty');
+        
+        if (loadingEl) {
+            loadingEl.style.display = 'block';
+            loadingEl.innerHTML = '<div class="spinner"></div> Loading RAMCO data...';
+        }
+        if (tableEl) tableEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'none';
+        
+        console.log('Calling getRamcoDataFirstPage...');
+        google.script.run
+            .withSuccessHandler(handleTransportDataSuccess)
+            .withFailureHandler(handleTransportDataError)
+            .getRamcoDataFirstPage();
+    }
+
+    function handleTransportDataSuccess(result) {
+        console.log('Transport data result:', result);
+        
+        const loadingEl = document.getElementById('transportLoading');
+        const tableEl = document.getElementById('transportTableContainer');
+        const emptyEl = document.getElementById('transportEmpty');
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        
+        if (!result || !result.success) {
+            console.log('No success in result:', result);
+            if (emptyEl) {
+                emptyEl.style.display = 'block';
+                emptyEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📋</div>
+                        <h3>Error Loading Data</h3>
+                        <p>${result ? result.message : 'Unknown error occurred'}</p>
+                    </div>
+                `;
+            }
+            if (tableEl) tableEl.style.display = 'none';
+            return;
+        }
+        
+        currentTransportData = {
+            headers: result.headers || [],
+            data: result.data || []
+        };
+        
+        if (!result.headers || result.headers.length === 0 || !result.data || result.data.length === 0) {
+            console.log('No data available');
+            if (emptyEl) emptyEl.style.display = 'block';
+            if (tableEl) tableEl.style.display = 'none';
+        } else {
+            console.log('Displaying transport data:', result.data.length, 'rows');
+            displayTransportData(currentTransportData);
+            if (tableEl) tableEl.style.display = 'block';
+            if (emptyEl) emptyEl.style.display = 'none';
+        }
+    }
+
+    function handleTransportDataError(error) {
+        console.error('Transport data error:', error);
+        const loadingEl = document.getElementById('transportLoading');
+        const emptyEl = document.getElementById('transportEmpty');
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (emptyEl) {
+            emptyEl.style.display = 'block';
+            emptyEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">⚠️</div>
+                    <h3>Error Loading Data</h3>
+                    <p>Error: ${error.toString()}</p>
+                </div>
+            `;
+        }
+        showNotification('Error loading transport data: ' + error.toString(), 'error');
+    }
+
+    function displayTransportData(data) {
+        console.log('Displaying transport data:', data);
+        
+        if (!data || !data.headers || data.headers.length === 0) {
+            const emptyEl = document.getElementById('transportEmpty');
+            const tableEl = document.getElementById('transportTableContainer');
+            if (emptyEl) emptyEl.style.display = 'block';
+            if (tableEl) tableEl.style.display = 'none';
+            return;
+        }
+
+        const tableHead = document.getElementById('transportTableHead');
+        const tableBody = document.getElementById('transportTableBody');
+        
+        if (!tableHead || !tableBody) {
+            console.error('Table elements not found');
+            return;
+        }
+
+        // Create table headers
+        const headerRow = document.createElement('tr');
+        data.headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            th.title = header; // Tooltip for long headers
+            headerRow.appendChild(th);
+        });
+        tableHead.innerHTML = '';
+        tableHead.appendChild(headerRow);
+        
+        // Calculate pagination
+        const startIndex = (currentTransportPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedData = data.data.slice(startIndex, endIndex);
+        
+        console.log('Paginated data:', paginatedData.length, 'rows');
+        
+        // Create table rows
+        tableBody.innerHTML = '';
+        paginatedData.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            tr.onclick = () => openTransportModal(data.data[startIndex + index]);
+            
+            row.forEach(cell => {
+                const td = document.createElement('td');
+                td.textContent = cell || '';
+                td.title = cell || ''; // Tooltip for long content
+                tr.appendChild(td);
+            });
+            
+            tableBody.appendChild(tr);
+        });
+        
+        // Update pagination
+        updatePagination('transport', data.data.length);
+    }
+
+    function searchTransportData() {
+        const searchInput = document.getElementById('transportSearch');
+        if (!searchInput) return;
+        
+        const searchTerm = searchInput.value;
+        console.log('Searching for:', searchTerm);
+        
+        if (searchTerm.trim() === '') {
+            displayTransportData(currentTransportData);
+            return;
+        }
+        
+        const loadingEl = document.getElementById('transportLoading');
+        if (loadingEl) {
+            loadingEl.style.display = 'block';
+            loadingEl.innerHTML = '<div class="spinner"></div> Searching...';
+        }
+        
+        google.script.run
+            .withSuccessHandler(handleTransportDataSuccess)
+            .withFailureHandler(handleTransportDataError)
+            .searchRamcoData(searchTerm);
+    }
+
+    function openTransportModal(rowData) {
+        console.log('Opening transport modal with data:', rowData);
+        
+        if (!currentTransportData.headers || currentTransportData.headers.length === 0) {
+            showNotification('No data available to create ticket', 'error');
+            return;
+        }
+
+        // Populate form with row data
+        const headers = currentTransportData.headers;
+        
+        // Map the data based on your actual column names
+        const getValue = (columnName) => {
+            const index = headers.findIndex(h => h.toLowerCase() === columnName.toLowerCase());
+            return index !== -1 ? (rowData[index] || '') : '';
+        };
+
+        const haulersNameEl = document.getElementById('haulersName');
+        const driverEl = document.getElementById('driver');
+        const plateNumberEl = document.getElementById('plateNumber');
+        const soldToNameEl = document.getElementById('soldToName');
+        const shipToNameEl = document.getElementById('shipToName');
+        const shipToAddressEl = document.getElementById('shipToAddress');
+        const dispatchDateEl = document.getElementById('dispatchDate');
+        const dispatchTimeEl = document.getElementById('dispatchTime');
+
+        if (haulersNameEl) haulersNameEl.value = getValue('hauler name');
+        if (driverEl) driverEl.value = getValue('driver name');
+        if (plateNumberEl) plateNumberEl.value = getValue('vehicle no.');
+        if (soldToNameEl) soldToNameEl.value = getValue('sold to name');
+        if (shipToNameEl) shipToNameEl.value = getValue('ship to name');
+        if (shipToAddressEl) shipToAddressEl.value = getValue('ship to address');
+        if (dispatchDateEl) dispatchDateEl.value = getValue('dispatch date');
+        if (dispatchTimeEl) dispatchTimeEl.value = getValue('wb out time');
+        
+        const modal = document.getElementById('transportModal');
+        if (modal) modal.style.display = 'block';
+    }
+
+    // Tickets Data Functions
+    function loadTicketsData() {
+        const loadingEl = document.getElementById('ticketsLoading');
+        const tableEl = document.getElementById('ticketsTableContainer');
+        const emptyEl = document.getElementById('ticketsEmpty');
+        
+        if (loadingEl) loadingEl.style.display = 'block';
+        if (tableEl) tableEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = 'none';
+        
+        google.script.run
+            .withSuccessHandler(handleTicketsDataSuccess)
+            .withFailureHandler(handleTicketsDataError)
+            .getTransportIssues();
+    }
+
+    function handleTicketsDataSuccess(result) {
+        const loadingEl = document.getElementById('ticketsLoading');
+        const tableEl = document.getElementById('ticketsTableContainer');
+        const emptyEl = document.getElementById('ticketsEmpty');
+        
+        if (loadingEl) loadingEl.style.display = 'none';
+        
+        if (!result || !result.success) {
+            if (emptyEl) emptyEl.style.display = 'block';
+            if (tableEl) tableEl.style.display = 'none';
+            return;
+        }
+        
+        currentTicketsData = {
+            headers: result.headers || [],
+            data: result.data || []
+        };
+        
+        if (!result.headers || result.headers.length === 0 || !result.data || result.data.length === 0) {
+            if (emptyEl) emptyEl.style.display = 'block';
+            if (tableEl) tableEl.style.display = 'none';
+        } else {
+            displayTicketsData(currentTicketsData);
+            if (tableEl) tableEl.style.display = 'block';
+            if (emptyEl) emptyEl.style.display = 'none';
+        }
+    }
+
+    function handleTicketsDataError(error) {
+        const loadingEl = document.getElementById('ticketsLoading');
+        if (loadingEl) {
+            loadingEl.innerHTML = 'Error loading tickets: ' + error.toString();
+        }
+        showNotification('Error loading tickets: ' + error.toString(), 'error');
+    }
+
+    function displayTicketsData(data) {
+        if (!data || !data.headers || data.headers.length === 0) {
+            const emptyEl = document.getElementById('ticketsEmpty');
+            const tableEl = document.getElementById('ticketsTableContainer');
+            if (emptyEl) emptyEl.style.display = 'block';
+            if (tableEl) tableEl.style.display = 'none';
+            return;
+        }
+
+        const tableHead = document.getElementById('ticketsTableHead');
+        const tableBody = document.getElementById('ticketsTableBody');
+        
+        if (!tableHead || !tableBody) return;
+
+        // Create table headers
+        const headerRow = document.createElement('tr');
+        data.headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            th.title = header;
+            headerRow.appendChild(th);
+        });
+        tableHead.innerHTML = '';
+        tableHead.appendChild(headerRow);
+        
+        // Calculate pagination
+        const startIndex = (currentTicketsPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedData = data.data.slice(startIndex, endIndex);
+        
+        // Create table rows
+        tableBody.innerHTML = '';
+        paginatedData.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            tr.onclick = () => openTicketModal(data.data[startIndex + index]);
+            
+            row.forEach(cell => {
+                const td = document.createElement('td');
+                td.textContent = cell || '';
+                td.title = cell || '';
+                tr.appendChild(td);
+            });
+            
+            tableBody.appendChild(tr);
+        });
+        
+        // Update pagination
+        updatePagination('tickets', data.data.length);
+    }
+
+    function searchTickets() {
+        const searchInput = document.getElementById('ticketsSearch');
+        if (!searchInput) return;
+        
+        const searchTerm = searchInput.value;
+        
+        if (searchTerm.trim() === '') {
+            displayTicketsData(currentTicketsData);
+            return;
+        }
+        
+        google.script.run
+            .withSuccessHandler(handleTicketsDataSuccess)
+            .withFailureHandler(handleTicketsDataError)
+            .searchTransportIssues(searchTerm);
+    }
+
+    function openTicketModal(rowData) {
+        if (!currentTicketsData.headers || currentTicketsData.headers.length === 0) {
+            showNotification('No ticket data available', 'error');
+            return;
+        }
+
+        const headers = currentTicketsData.headers;
+        let detailsHtml = '<div class="ticket-details">';
+        
+        headers.forEach((header, index) => {
+            detailsHtml += `
+                <div class="form-group">
+                    <label class="form-label">${header}</label>
+                    <div class="form-control" style="background: #f8f9fa;">${rowData[index] || ''}</div>
+                </div>
+            `;
+        });
+        
+        detailsHtml += '</div>';
+        
+        const ticketDetails = document.getElementById('ticketDetails');
+        if (ticketDetails) {
+            ticketDetails.innerHTML = detailsHtml;
+        }
+        
+        const modal = document.getElementById('ticketModal');
+        if (modal) modal.style.display = 'block';
+    }
+
+    // Pagination
+    function updatePagination(type, totalItems) {
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        const paginationContainer = document.getElementById(type + 'Pagination');
+        const currentPage = type === 'transport' ? currentTransportPage : currentTicketsPage;
+        
+        if (!paginationContainer) return;
+        
+        let paginationHtml = '';
+        
+        if (totalPages > 1) {
+            // Previous button
+            if (currentPage > 1) {
+                paginationHtml += `<button onclick="changePage('${type}', ${currentPage - 1})">Previous</button>`;
+            }
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const activeClass = i === currentPage ? 'active' : '';
+                paginationHtml += `<button class="${activeClass}" onclick="changePage('${type}', ${i})">${i}</button>`;
+            }
+            
+            // Next button
+            if (currentPage < totalPages) {
+                paginationHtml += `<button onclick="changePage('${type}', ${currentPage + 1})">Next</button>`;
+            }
+        }
+        
+        paginationContainer.innerHTML = paginationHtml;
+    }
+
+    function changePage(type, page) {
+        if (type === 'transport') {
+            currentTransportPage = page;
+            displayTransportData(currentTransportData);
+        } else if (type === 'tickets') {
+            currentTicketsPage = page;
+            displayTicketsData(currentTicketsData);
+        }
+    }
+
+    // Form Submission
+    function handleTicketSubmitSuccess(result) {
+        if (result.success) {
+            showNotification('✅ Ticket submitted successfully! Ticket Number: ' + result.ticketNumber, 'success');
+            closeModal('transportModal');
+            const form = document.getElementById('transportForm');
+            if (form) form.reset();
+        } else {
+            showNotification('❌ Error submitting ticket: ' + result.message, 'error');
+        }
+    }
+
+    function handleTicketSubmitError(error) {
+        showNotification('❌ Error submitting ticket: ' + error.toString(), 'error');
+    }
+
+    // Modal Functions
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+
+    // Utility Functions
+    function showAlert(type, message, containerId = null) {
+        const alertClass = type === 'success' ? 'alert-success' : (type === 'info' ? 'alert-info' : 'alert-error');
+        const alertHtml = `<div class="alert ${alertClass}">${message}</div>`;
+        
+        if (containerId) {
+            const container = document.getElementById(containerId);
+            if (container) container.innerHTML = alertHtml;
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => {
+            document.body.removeChild(notification);
+        });
+
+        // Create new notification
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 5000);
+    }
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('RAMCO Transport Management System initialized');
+        console.log('Current URL:', window.location.href);
+        console.log('Google Apps Script API available:', typeof google !== 'undefined' && typeof google.script !== 'undefined');
+    });
+</script>

@@ -1,0 +1,86 @@
+<div class="page-header">
+    <h1 class="page-title">📤 Upload Trips</h1>
+    <p class="page-subtitle">Import CSV files to update trip data with automatic deduplication</p>
+</div>
+
+<div class="card">
+    <div class="upload-area" id="uploadArea">
+        <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
+        <h3>Drop CSV file here or click to select</h3>
+        <p style="margin-top: 10px; color: #7f8c8d;">Supported format: CSV files only</p>
+        <input type="file" id="csvFile" accept=".csv" style="display: none;">
+    </div>
+    
+    <div class="upload-progress" id="uploadProgress">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Preparing upload...</div>
+    </div>
+    
+    <div id="uploadResult" style="margin-top: 20px;"></div>
+</div>
+
+<div class="card">
+    <h3>📋 Column Mapping</h3>
+    <p>Your CSV columns will be mapped to the RAMCO sheet as follows:</p>
+    <div style="margin-top: 15px; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">CSV Column</th>
+                    <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">Sheet Column</th>
+                    <th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>AE</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">A</td><td style="padding: 8px; border: 1px solid #dee2e6;">Delivery Rec</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>AC</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">B</td><td style="padding: 8px; border: 1px solid #dee2e6;">Haulers Name</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>R</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">C</td><td style="padding: 8px; border: 1px solid #dee2e6;">Plate Number</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>P</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">D</td><td style="padding: 8px; border: 1px solid #dee2e6;">Driver Name</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>Q</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">E</td><td style="padding: 8px; border: 1px solid #dee2e6;">Dispatch Date</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>G</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">F</td><td style="padding: 8px; border: 1px solid #dee2e6;">Sold to Name</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>L</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">G</td><td style="padding: 8px; border: 1px solid #dee2e6;">Ship to Name</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>AF</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">H</td><td style="padding: 8px; border: 1px solid #dee2e6;">Ship to Address</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>A</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">I</td><td style="padding: 8px; border: 1px solid #dee2e6;">S.O Number</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>AE</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">J</td><td style="padding: 8px; border: 1px solid #dee2e6;">Delivery Rec No</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>U</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">K</td><td style="padding: 8px; border: 1px solid #dee2e6;">Dispatch Qty</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>AK</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">L</td><td style="padding: 8px; border: 1px solid #dee2e6;">Bay Code</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>AM</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">M</td><td style="padding: 8px; border: 1px solid #dee2e6;">Dispatch Time</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #dee2e6;"><strong>AJ</strong></td><td style="padding: 8px; border: 1px solid #dee2e6;">N</td><td style="padding: 8px; border: 1px solid #dee2e6;">Truck Type</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🔄 Deduplication Rules</h3>
+    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #2196f3;">
+        <h4 style="margin-top: 0; color: #1976d2;">Smart Duplicate Handling</h4>
+        <p style="margin-bottom: 10px;">The system automatically handles duplicates using this logic:</p>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li><strong>Identification:</strong> Records with the same <em>Plate Number + Hauler Name</em> combination</li>
+            <li><strong>Resolution:</strong> Keep the entry with the <em>latest Dispatch Date</em></li>
+            <li><strong>Action:</strong> Older entries are automatically removed</li>
+            <li><strong>Formatting:</strong> Source formatting is preserved (dates, times, etc.)</li>
+        </ul>
+    </div>
+</div>
+
+<div class="card">
+    <h3>💡 Upload Tips</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h4 style="margin-top: 0; color: #155724;">✅ File Format</h4>
+            <p style="margin: 0; font-size: 14px;">Ensure your CSV file has proper column headers and uses standard CSV formatting (comma-separated values).</p>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <h4 style="margin-top: 0; color: #856404;">⚡ Performance</h4>
+            <p style="margin: 0; font-size: 14px;">Large files (1000+ rows) may take a few moments to process. Please be patient during upload.</p>
+        </div>
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #17a2b8;">
+            <h4 style="margin-top: 0; color: #0c5460;">🔒 Data Safety</h4>
+            <p style="margin: 0; font-size: 14px;">Your data is automatically backed up. Duplicates are safely removed without data loss.</p>
+        </div>
+    </div>
+</div>
